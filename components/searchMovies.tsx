@@ -1,6 +1,5 @@
 import { useQuery, useLazyQuery, gql } from "@apollo/client";
-import styles from "../styles/Home.module.css";
-import { Input, Button, Box, Grid, Card, CardContent, CardActions, Typography, CardMedia } from '@mui/material';
+import { Input, Button, Box, Grid, Card, CardContent, Chip, Typography, CardMedia } from '@mui/material';
 import CircularProgress from "@mui/material/CircularProgress";
 import {useState} from "react";
 
@@ -11,6 +10,11 @@ const QUERY = gql`
       searchMovies(query: $query) {
         id
         name
+        genres {
+            name
+        }
+        score
+        releaseDate
         img: poster {
             url: custom(size: "w185_and_h278_bestv2")
         }
@@ -18,7 +22,7 @@ const QUERY = gql`
   }
 `;
 
-export default function PopularMovies() {
+export default function SearchMovies() {
     const [searchText, setSearchText] = useState('');
     const [executeSearch, { loading, data, error }] = useLazyQuery(
         QUERY
@@ -30,46 +34,64 @@ export default function PopularMovies() {
     }
 
     const handleChange = (e: { target: { value: any } }) => setSearchText(e.target.value);
-    const handleSubmit = () => {
+    const handleKeypress = (e: { key: string; }) => {
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
+    };
+    const handleSearch = () => {
         executeSearch({
             variables: { query: searchText }
         })
     }
 
+    const getYear = (dateTime: any) => {
+        return new Date(dateTime).getFullYear();
+    }
+
     return (
         <>
-            <Box>
-                <Input type="text" value={searchText} onChange={handleChange} />
-                <Button onClick={handleSubmit}>Search</Button>
+            <Box display="flex" alignItems="center" justifyContent="center">
+                <Input type="text" value={searchText} onKeyPress={handleKeypress} onChange={handleChange} />
+                <Button onClick={handleSearch}>Search</Button>
             </Box>
 
-            {loading && <CircularProgress /> }
+            {loading &&
+                <Box mt={5} display="flex" alignItems="center" justifyContent="center">
+                    <CircularProgress size="6rem"/>
+                </Box>
+            }
             {!loading &&
                 <Grid container mt={5} spacing={4} direction="row" justifyContent="center" alignItems="center">
                     {data?.searchMovies.map((movie: any) => (
                         <Grid item>
-                            <Card sx={{ minWidth: 275 }}>
+                            <Card sx={{ minWidth: 185, maxWidth: 185 }}>
                                 <CardMedia
                                     component="img"
-                                    height="140"
-                                    image={movie.img.url}
+                                    height="278"
+                                    width="185"
+                                    image={movie?.img?.url}
                                 />
                                 <CardContent>
-                                    <Typography variant="h5" component="div">
-                                        {movie.name}
-                                    </Typography>
-                                    <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                                        adjective
-                                    </Typography>
+                                    <Box minHeight="50px" maxHeight="50px">
+                                        <Typography variant="subtitle2" component="div">
+                                            {movie.name}
+                                        </Typography>
+                                    </Box>
                                     <Typography variant="body2">
-                                        well meaning and kindly.
-                                        <br />
-                                        {'"a benevolent smile"'}
+                                        {movie?.genres[0]?.name}
                                     </Typography>
+                                    <Grid container direction="row" justifyContent="space-between" alignItems="center">
+                                        <Grid item>
+                                            <Typography variant="body2">
+                                                {getYear(movie?.releaseDate)}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item>
+                                            <Chip label={movie.score} size="small" />
+                                        </Grid>
+                                    </Grid>
                                 </CardContent>
-                                <CardActions>
-                                    <Button size="small">Learn More</Button>
-                                </CardActions>
                             </Card>
                         </Grid>
                     ))}

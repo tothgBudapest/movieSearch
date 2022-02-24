@@ -9,11 +9,12 @@ import {
     Chip,
     Typography,
     CardMedia,
-    CardActions,
+    CardActionArea,
     CircularProgress
 } from '@mui/material';
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import MovieCard from './movieCard';
 import { SEARCH_MOVIES_BY_STRING } from '../constants/gql-query.constant';
 
 export default function SearchMovies() {
@@ -28,13 +29,15 @@ export default function SearchMovies() {
         }
     };
     const handleSearch = () => {
-        executeSearch({
-            variables: { query: searchText }
-        });
+        if (searchText !== '') {
+            executeSearch({
+                variables: { query: searchText }
+            });
+        }
     };
 
-    const getYear = (dateTime: any) => {
-        return new Date(dateTime).getFullYear();
+    const handleClear = () => {
+        router.reload();
     };
 
     const openDetailsPage = (name: string, id: number) => {
@@ -49,6 +52,7 @@ export default function SearchMovies() {
         executeSearch({
             variables: { query: router.query.searchText as string }
         });
+        router.replace('/', undefined, { shallow: true });
     }
 
     if (error) {
@@ -63,16 +67,31 @@ export default function SearchMovies() {
     return (
         <>
             <Box display="flex" alignItems="center" justifyContent="center">
-                <Input type="text" value={searchText} onKeyPress={handleKeypress} onChange={handleChange} />
-                <Button onClick={handleSearch}>Search</Button>
+                <Input
+                    type="text"
+                    id="movie_search_field"
+                    value={searchText}
+                    onKeyPress={handleKeypress}
+                    onChange={handleChange}
+                />
+                <Box ml={2}>
+                    <Button id="movie_search_button" variant="contained" onClick={handleSearch}>
+                        Search
+                    </Button>
+                </Box>
+                {searchText !== '' && (
+                    <Box ml={2}>
+                        <Button onClick={handleClear}>Clear</Button>
+                    </Box>
+                )}
             </Box>
 
             {loading && (
                 <Box mt={5} display="flex" alignItems="center" justifyContent="center">
-                    <CircularProgress size="6rem" />
+                    <CircularProgress size="4rem" />
                 </Box>
             )}
-            {!loading && (
+            {!loading && searchText !== '' && (
                 <Grid container mt={5} spacing={4} direction="row" justifyContent="center" alignItems="center">
                     {data?.searchMovies?.length === 0 && (
                         <Box mt={5} display="flex" alignItems="center" justifyContent="center">
@@ -80,31 +99,8 @@ export default function SearchMovies() {
                         </Box>
                     )}
                     {data?.searchMovies.map((movie: any) => (
-                        <Grid item>
-                            <Card sx={{ minWidth: 185, maxWidth: 185 }}>
-                                <CardMedia component="img" height="278" width="185" image={movie?.img?.url} />
-                                <CardContent>
-                                    <Box minHeight="50px" maxHeight="50px">
-                                        <Typography variant="subtitle2" component="div">
-                                            {movie.name}
-                                        </Typography>
-                                    </Box>
-                                    <Typography variant="body2">{movie?.genres[0]?.name}</Typography>
-                                    <Grid container direction="row" justifyContent="space-between" alignItems="center">
-                                        <Grid item>
-                                            <Typography variant="body2">{getYear(movie?.releaseDate)}</Typography>
-                                        </Grid>
-                                        <Grid item>
-                                            <Chip label={movie.score} size="small" />
-                                        </Grid>
-                                    </Grid>
-                                </CardContent>
-                                <CardActions>
-                                    <Button size="small" onClick={() => openDetailsPage(movie.name, movie.id)}>
-                                        Learn More
-                                    </Button>
-                                </CardActions>
-                            </Card>
+                        <Grid key={'movie_' + movie?.id} item>
+                            <MovieCard movie={movie} callback={openDetailsPage}></MovieCard>
                         </Grid>
                     ))}
                 </Grid>

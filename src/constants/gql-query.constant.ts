@@ -15,7 +15,13 @@ export const GET_MOVIE_BY_ID = gql`
                 url: medium
             }
             similar {
+                id
                 name
+                score
+                releaseDate
+                genres {
+                    name
+                }
                 img: poster {
                     url: small
                 }
